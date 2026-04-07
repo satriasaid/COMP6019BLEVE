@@ -12,6 +12,15 @@ warnings.filterwarnings('ignore')
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
+# Configure GPU memory growth to prevent memory allocation issues
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        pass  # Memory growth must be set before GPUs are initialized
+
 import numpy as np
 import pandas as pd
 import joblib
@@ -28,8 +37,31 @@ from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 # Suppress TensorFlow info messages
 tf.get_logger().setLevel('ERROR')
 
+# Enable mixed precision for faster training on compatible GPUs (RTX 20xx+, A100, etc.)
+try:
+    from tensorflow.keras import mixed_precision
+    mixed_precision.set_global_policy('mixed_float16')
+    MIXED_PRECISION_ENABLED = True
+except Exception:
+    MIXED_PRECISION_ENABLED = False
+
 print("=" * 70)
 print("NEURAL NETWORK REGRESSION WITH GRIDSEARCHCV")
+print("=" * 70)
+
+# Check GPU availability
+print("\n" + "=" * 70)
+print("GPU/CUDA Availability Check")
+print("=" * 70)
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    print(f"  CUDA available: {len(gpus)} GPU(s) detected")
+    for gpu in gpus:
+        print(f"    - {gpu}")
+    if MIXED_PRECISION_ENABLED:
+        print(f"  Mixed precision (float16): ENABLED")
+else:
+    print("  No GPU detected. Training will use CPU.")
 print("=" * 70)
 
 # ============================================================================
@@ -143,13 +175,13 @@ print("  Pipeline created")
 print("\n[STEP 4] Defining hyperparameter grid...")
 
 param_grid_nn = {
-    'regressor__model__n_units': [64, 128],
-    'regressor__model__n_layers': [1, 2, 3],
-    'regressor__model__dropout_rate': [0.1, 0.2, 0.3],
+    'regressor__model__n_units': [64, 128, 256],
+    'regressor__model__n_layers': [2, 3, 4],
+    'regressor__model__dropout_rate': [0.1, 0.2, 0.3, 0.4],
     'regressor__model__l2_reg': [0.001, 0.01, 0.1],
-    'regressor__model__learning_rate': [0.001, 0.01],
-    'regressor__batch_size': [16, 32, 64],
-    'regressor__epochs': [50, 100]
+    'regressor__model__learning_rate': [0.0001, 0.001, 0.01],
+    'regressor__batch_size': [32, 64, 128],
+    'regressor__epochs': [100, 150]
 }
 
 # Calculate total combinations
