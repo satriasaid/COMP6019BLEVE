@@ -12,15 +12,6 @@ warnings.filterwarnings('ignore')
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
-# Configure GPU memory growth to prevent memory allocation issues
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        pass  # Memory growth must be set before GPUs are initialized
-
 import numpy as np
 import pandas as pd
 import joblib
@@ -36,6 +27,19 @@ from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
 # Suppress TensorFlow info messages
 tf.get_logger().setLevel('ERROR')
+
+# Configure GPU memory growth after TensorFlow is imported
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        GPU_AVAILABLE = True
+    except RuntimeError as e:
+        print(f"  GPU memory growth error: {e}")
+        GPU_AVAILABLE = False
+else:
+    GPU_AVAILABLE = False
 
 # Enable mixed precision for faster training on compatible GPUs (RTX 20xx+, A100, etc.)
 try:
@@ -53,8 +57,7 @@ print("=" * 70)
 print("\n" + "=" * 70)
 print("GPU/CUDA Availability Check")
 print("=" * 70)
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
+if GPU_AVAILABLE:
     print(f"  CUDA available: {len(gpus)} GPU(s) detected")
     for gpu in gpus:
         print(f"    - {gpu}")
