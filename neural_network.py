@@ -39,8 +39,8 @@ print("\n[STEP 1] Loading data from parquet files...")
 
 X_train = pd.read_parquet('X_train_scaled_df.parquet')
 X_test = pd.read_parquet('X_test_scaled_df.parquet')
-y_train = pd.read_parquet('y_train.parquet')['target'].values
-y_test = pd.read_parquet('y_test.parquet')['target'].values
+y_train = pd.read_parquet('y_train.parquet').values
+y_test = pd.read_parquet('y_test.parquet').values
 
 print(f"  X_train shape: {X_train.shape}")
 print(f"  X_test shape:  {X_test.shape}")
